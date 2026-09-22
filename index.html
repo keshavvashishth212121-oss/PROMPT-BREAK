@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>PROMPT//BREAK - Level 1</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .laser-active { background-color: #ef4444; box-shadow: 0 0 15px #ef4444; opacity: 1; }
+    .laser-off { background-color: #22c55e; box-shadow: 0 0 10px #22c55e; opacity: 0.15; }
+    #player { transition: left 3s linear; }
+  </style>
+</head>
+<body class="bg-slate-900 text-white font-sans min-h-screen flex flex-col items-center justify-center p-4">
+
+  <div class="max-w-xl w-full bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-2xl">
+    <div class="flex justify-between items-center mb-4">
+      <h1 class="text-xl font-bold tracking-wider text-cyan-400">PROMPT//BREAK</h1>
+      <span class="text-xs bg-cyan-950 text-cyan-300 px-2.5 py-1 rounded-full border border-cyan-800">LEVEL 1: COMMAND</span>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameArea" class="relative bg-slate-950 h-48 rounded-lg border border-slate-800 mb-4 flex items-center px-8 overflow-hidden">
+      <!-- Player -->
+      <div id="player" class="absolute left-8 w-8 h-8 bg-cyan-500 rounded flex items-center justify-center text-xs font-bold text-slate-950 z-10">P</div>
+      
+      <!-- Laser Barrier -->
+      <div id="laser" class="laser-active absolute left-1/2 -translate-x-1/2 w-2 h-36 rounded transition-all duration-300 flex items-center justify-center">
+        <span class="text-[10px] rotate-90 text-black font-extrabold uppercase">Laser</span>
+      </div>
+
+      <!-- Exit Goal -->
+      <div id="goal" class="absolute right-8 w-8 h-8 bg-emerald-500 rounded flex items-center justify-center text-xs font-bold text-slate-950">EXIT</div>
+    </div>
+
+    <!-- Terminal Feedback -->
+    <div id="logs" class="bg-slate-900 text-xs font-mono p-3 rounded mb-4 h-24 overflow-y-auto border border-slate-800 text-slate-400">
+      > SYSTEM READY. Enter rule command to disable laser barrier...
+    </div>
+
+    <!-- Input Control -->
+    <div class="flex gap-2">
+      <input type="text" id="promptInput" placeholder="e.g., Disable laser for 5 seconds when switch active" 
+             class="flex-1 bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 font-mono" />
+      <button onclick="processPrompt()" class="bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold px-4 py-2 rounded text-sm transition">EXECUTE</button>
+    </div>
+  </div>
+
+  <script>
+    let isLaserOff = false;
+
+    function log(msg) {
+      const logs = document.getElementById('logs');
+      logs.innerHTML += `<div>> ${msg}</div>`;
+      logs.scrollTop = logs.scrollHeight;
+    }
+
+    function processPrompt() {
+      const input = document.getElementById('promptInput').value.toLowerCase();
+      if (!input) return;
+
+      log(`INPUT: "${input}"`);
+
+      const hasAction = input.includes('disable') || input.includes('turn off') || input.includes('deactivate');
+      const hasCondition = input.includes('when') || input.includes('if') || input.includes('switch');
+      const hasDuration = input.includes('second') || input.includes('sec');
+
+      if (hasAction && hasCondition && hasDuration) {
+        log(`<span class="text-emerald-400">RULE PARSED: [Action: DISABLE_LASER] [Condition: VALID] [Timer: 5s]</span>`);
+        
+        const laser = document.getElementById('laser');
+        laser.className = 'laser-off absolute left-1/2 -translate-x-1/2 w-2 h-36 rounded transition-all duration-300 flex items-center justify-center';
+        isLaserOff = true;
+        
+        log(`<span class="text-cyan-400">WORLD STATE CHANGED: Laser Deactivated. Executing player movement...</span>`);
+
+        // Move Player to Exit automatically
+        const player = document.getElementById('player');
+        player.style.left = 'calc(100% - 4rem)';
+
+        setTimeout(() => {
+          if (isLaserOff) {
+            log(`<span class="text-emerald-400 font-bold">LEVEL 1 COMPLETE: SYSTEM OVERRIDDEN!</span>`);
+          }
+        }, 3000);
+
+        setTimeout(() => {
+          laser.className = 'laser-active absolute left-1/2 -translate-x-1/2 w-2 h-36 rounded transition-all duration-300 flex items-center justify-center';
+          isLaserOff = false;
+        }, 5000);
+
+      } else if (hasAction && !hasCondition) {
+        log(`<span class="text-yellow-400 font-bold">REJECTED: Prompt too vague. Specify conditions (e.g., 'when switch active').</span>`);
+      } else {
+        log(`<span class="text-red-400 font-bold">ERROR: Could not parse prompt into valid game rule.</span>`);
+      }
+
+      document.getElementById('promptInput').value = '';
+    }
+  </script>
+</body>
+</html>
