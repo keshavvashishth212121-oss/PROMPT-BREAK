@@ -26,6 +26,19 @@
     .gate-open { background-color: #059669; border-color: #34d399; box-shadow: 0 0 10px #34d399; }
     .core-locked { background-color: #475569; border-color: #64748b; }
     .core-active { background-color: #a855f7; border-color: #c084fc; box-shadow: 0 0 12px #c084fc; }
+    button, input { -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, input:focus-visible {
+      outline: 2px solid #22d3ee;
+      outline-offset: 2px;
+    }
+    @media (max-width: 480px) {
+      body { padding: 0; }
+      #gameArea { height: 12rem; padding-left: 1rem; padding-right: 1rem; }
+      #player { width: 2rem; height: 2rem; }
+      #laser { height: 9rem; }
+      #promptInput { min-width: 0; }
+      #tabTerminalBtn, #tabHistoryBtn { flex: 1; padding-left: 0.5rem; padding-right: 0.5rem; }
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-white font-sans min-h-screen flex flex-col items-center justify-center p-2 sm:p-4">
@@ -46,7 +59,7 @@
         <div>2. Override environmental security logic.</div>
         <div>3. Reach the exit chamber.</div>
       </div>
-      <button onclick="startGame()" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-mono font-extrabold py-3 rounded-xl transition shadow-lg text-sm">
+      <button type="button" onclick="startGame()" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-mono font-extrabold py-3 rounded-xl transition shadow-lg text-sm">
         ENTER THE SYSTEM
       </button>
     </div>
@@ -62,7 +75,7 @@
       <p id="objModalBody" class="text-xs text-slate-300 font-mono leading-relaxed">
         Reach exit by creating a rule that temporarily disables the laser barrier.
       </p>
-      <button onclick="closeObjectiveModal()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono font-bold py-2 rounded-xl text-xs transition">
+      <button type="button" onclick="closeObjectiveModal()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono font-bold py-2 rounded-xl text-xs transition">
         UNDERSTOOD
       </button>
     </div>
@@ -96,7 +109,7 @@
         </div>
       </div>
 
-      <button onclick="fullRestart()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl transition text-xs shadow-lg">
+      <button type="button" onclick="fullRestart()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl transition text-xs shadow-lg">
         RESTART FULL SYSTEM
       </button>
     </div>
@@ -210,8 +223,8 @@
     <!-- Terminal Feedback & History Tabs -->
     <div class="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden">
       <div class="flex border-b border-slate-800 font-mono text-xs">
-        <button id="tabTerminalBtn" onclick="switchTab('terminal')" class="px-4 py-1.5 text-cyan-400 bg-slate-900 font-bold border-r border-slate-800">TERMINAL LOGS</button>
-        <button id="tabHistoryBtn" onclick="switchTab('history')" class="px-4 py-1.5 text-slate-400 hover:text-white">PROMPT HISTORY (<span id="historyCount">0</span>)</button>
+        <button type="button" id="tabTerminalBtn" onclick="switchTab('terminal')" class="px-4 py-1.5 text-cyan-400 bg-slate-900 font-bold border-r border-slate-800">TERMINAL LOGS</button>
+        <button type="button" id="tabHistoryBtn" onclick="switchTab('history')" class="px-4 py-1.5 text-slate-400 hover:text-white">PROMPT HISTORY (<span id="historyCount">0</span>)</button>
       </div>
 
       <div id="logs" class="p-3 font-mono text-xs h-28 overflow-y-auto space-y-1 text-slate-400">
@@ -225,10 +238,10 @@
 
     <!-- Level 5 Retry / Reset Container -->
     <div id="retryContainer" class="hidden flex gap-2">
-      <button onclick="resetLevel5()" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl font-mono text-xs transition shadow-lg">
+      <button type="button" onclick="resetLevel5()" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl font-mono text-xs transition shadow-lg">
         RETRY LEVEL 5
       </button>
-      <button onclick="fullRestart()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2.5 rounded-xl font-mono text-xs transition border border-slate-700">
+      <button type="button" onclick="fullRestart()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2.5 rounded-xl font-mono text-xs transition border border-slate-700">
         RESTART GAME
       </button>
     </div>
@@ -236,9 +249,10 @@
     <!-- Input Control Panel -->
     <div class="flex gap-2">
       <input type="text" id="promptInput" placeholder="Type natural language rule..." 
-             onkeydown="if(event.key==='Enter') processPrompt()"
+             aria-label="Natural language rule"
+             onkeydown="if(event.key==='Enter') { event.preventDefault(); processPrompt(); }"
              class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 font-mono transition" />
-      <button id="execBtn" onclick="processPrompt()" class="bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-sm font-mono transition shadow-lg">EXECUTE</button>
+      <button type="button" id="execBtn" onclick="processPrompt()" class="bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-sm font-mono transition shadow-lg">EXECUTE</button>
     </div>
 
   </div>
@@ -259,12 +273,8 @@
       scoresHistory: { precision: [], efficiency: [], creativity: [] },
       promptHistory: []
     };
-
-    function escapeHTML(str) {
-      return str.replace(/[&<>'"]/g, 
-        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
-      );
-    }
+    let transitionToken = 0;
+    let isTransitioning = false;
 
     function startGame() {
       document.getElementById('startOverlay').classList.add('hidden');
@@ -298,7 +308,10 @@
 
     function sysLog(category, msg, colorClass = 'text-slate-400') {
       const logs = document.getElementById('logs');
-      logs.innerHTML += `<div class="${colorClass}">> [${category}] ${msg}</div>`;
+      const entry = document.createElement('div');
+      entry.className = colorClass;
+      entry.textContent = `> [${category}] ${msg}`;
+      logs.appendChild(entry);
       logs.scrollTop = logs.scrollHeight;
     }
 
@@ -504,10 +517,9 @@
     function processPrompt() {
       const inputField = document.getElementById('promptInput');
       const rawInput = inputField.value;
-      if (!rawInput || !rawInput.trim()) return;
+      if (isTransitioning || inputField.disabled || !rawInput || !rawInput.trim()) return;
 
-      const safeInput = escapeHTML(rawInput);
-      sysLog('PLAYER', `Submitted prompt: "${safeInput}"`);
+      sysLog('PLAYER', `Submitted prompt: "${rawInput}"`);
 
       // 1. Parse Intent
       const intent = parseIntent(rawInput);
@@ -525,7 +537,7 @@
 
       // 4. Record History
       gameState.promptHistory.push({
-        prompt: safeInput,
+        prompt: rawInput,
         status: validation.valid ? 'SUCCESS' : 'REJECTED',
         reason: validation.valid ? 'Rule validated' : validation.reason
       });
@@ -541,6 +553,10 @@
       document.getElementById('scoreCreativity').innerText = validation.scores.creativity + "%";
 
       if (validation.valid) {
+        isTransitioning = true;
+        inputField.disabled = true;
+        document.getElementById('execBtn').disabled = true;
+        const currentTransition = ++transitionToken;
         sysLog('RULE', 'Validation SUCCESSFUL.', 'text-emerald-400 font-bold');
         sysLog('WORLD', 'Laser state → OFF. Exit gate → UNLOCKED.', 'text-cyan-400');
 
@@ -556,11 +572,13 @@
         renderWorld();
 
         setTimeout(() => {
+          if (currentTransition !== transitionToken) return;
           gameState.playerPosition = 'exit';
           renderWorld();
         }, 300);
 
         setTimeout(() => {
+          if (currentTransition !== transitionToken) return;
           if (gameState.level === 1) triggerNextLevel("LEVEL 1 COMPLETE!", setupLevel2);
           else if (gameState.level === 2) triggerNextLevel("LEVEL 2 COMPLETE!", setupLevel3);
           else if (gameState.level === 3) triggerNextLevel("LEVEL 3 COMPLETE!", setupLevel4);
@@ -609,26 +627,43 @@
       const historyCount = document.getElementById('historyCount');
       const historyView = document.getElementById('historyView');
       historyCount.innerText = gameState.promptHistory.length;
-
-      historyView.innerHTML = gameState.promptHistory.map((item, idx) => `
-        <div class="bg-slate-900 p-2 rounded border border-slate-800 flex justify-between items-center text-[11px]">
-          <div>
-            <span class="text-slate-500 font-bold mr-2">#0${idx + 1}</span>
-            <span class="text-slate-200">"${item.prompt}"</span>
-          </div>
-          <span class="${item.status === 'SUCCESS' ? 'text-emerald-400' : 'text-red-400'} font-bold">${item.status}</span>
-        </div>
-      `).join('');
+      historyView.replaceChildren();
+      gameState.promptHistory.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.className = 'bg-slate-900 p-2 rounded border border-slate-800 flex justify-between items-center text-[11px]';
+        const prompt = document.createElement('div');
+        const number = document.createElement('span');
+        number.className = 'text-slate-500 font-bold mr-2';
+        number.textContent = `#0${idx + 1}`;
+        const text = document.createElement('span');
+        text.className = 'text-slate-200';
+        text.textContent = `"${item.prompt}"`;
+        prompt.append(number, text);
+        const status = document.createElement('span');
+        status.className = `${item.status === 'SUCCESS' ? 'text-emerald-400' : 'text-red-400'} font-bold`;
+        status.textContent = item.status;
+        row.append(prompt, status);
+        historyView.appendChild(row);
+      });
+      if (!gameState.promptHistory.length) {
+        const empty = document.createElement('div');
+        empty.className = 'text-slate-500 italic text-[11px]';
+        empty.textContent = 'No prompts submitted yet.';
+        historyView.appendChild(empty);
+      }
     }
 
     function triggerNextLevel(msg, nextFunc) {
       sysLog('SUCCESS', msg, 'text-emerald-400 font-bold');
+      const currentTransition = transitionToken;
       setTimeout(() => {
+        if (currentTransition !== transitionToken) return;
         if (nextFunc) nextFunc();
       }, 1000);
     }
 
     function resetWorldState() {
+      isTransitioning = false;
       gameState.playerPosition = 'start';
       gameState.laserActive = true;
       gameState.switchA = false;
@@ -702,6 +737,8 @@
     }
 
     function fullRestart() {
+      transitionToken++;
+      isTransitioning = false;
       document.getElementById('victoryOverlay').classList.add('hidden');
       document.getElementById('retryContainer').classList.add('hidden');
       gameState.scoresHistory = { precision: [], efficiency: [], creativity: [] };
