@@ -2,51 +2,69 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>PROMPT//BREAK - Level 1</title>
+  <title>PROMPT//BREAK - Game Core</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     .laser-active { background-color: #ef4444; box-shadow: 0 0 15px #ef4444; opacity: 1; }
     .laser-off { background-color: #22c55e; box-shadow: 0 0 10px #22c55e; opacity: 0.15; }
-    #player { transition: left 3s linear; }
+    #player { transition: left 2.5s ease-in-out; }
   </style>
 </head>
 <body class="bg-slate-900 text-white font-sans min-h-screen flex flex-col items-center justify-center p-4">
 
-  <div class="max-w-xl w-full bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-2xl">
+  <div class="max-w-2xl w-full bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-2xl">
+    
+    <!-- Header & Level Info -->
     <div class="flex justify-between items-center mb-4">
-      <h1 class="text-xl font-bold tracking-wider text-cyan-400">PROMPT//BREAK</h1>
-      <span class="text-xs bg-cyan-950 text-cyan-300 px-2.5 py-1 rounded-full border border-cyan-800">LEVEL 1: COMMAND</span>
+      <div>
+        <h1 class="text-xl font-bold tracking-wider text-cyan-400">PROMPT//BREAK</h1>
+        <p class="text-xs text-slate-400 font-mono">DETERMINISTIC RULE ENGINE</p>
+      </div>
+      <span id="levelBadge" class="text-xs bg-cyan-950 text-cyan-300 px-3 py-1 rounded-full border border-cyan-800 font-mono font-bold">LEVEL 1: COMMAND</span>
     </div>
 
-    <!-- Game Screen -->
+    <!-- Scoring Widget -->
+    <div class="grid grid-cols-3 gap-2 mb-4 bg-slate-950 p-3 rounded-lg border border-slate-800 text-center font-mono text-xs">
+      <div>
+        <div class="text-slate-500">PRECISION</div>
+        <div id="scorePrecision" class="text-emerald-400 font-bold text-base">00%</div>
+      </div>
+      <div>
+        <div class="text-slate-500">EFFICIENCY</div>
+        <div id="scoreEfficiency" class="text-cyan-400 font-bold text-base">00%</div>
+      </div>
+      <div>
+        <div class="text-slate-500">CREATIVITY</div>
+        <div id="scoreCreativity" class="text-purple-400 font-bold text-base">00%</div>
+      </div>
+    </div>
+
+    <!-- Game Viewport -->
     <div id="gameArea" class="relative bg-slate-950 h-48 rounded-lg border border-slate-800 mb-4 flex items-center px-8 overflow-hidden">
-      <!-- Player -->
       <div id="player" class="absolute left-8 w-8 h-8 bg-cyan-500 rounded flex items-center justify-center text-xs font-bold text-slate-950 z-10">P</div>
       
-      <!-- Laser Barrier -->
       <div id="laser" class="laser-active absolute left-1/2 -translate-x-1/2 w-2 h-36 rounded transition-all duration-300 flex items-center justify-center">
         <span class="text-[10px] rotate-90 text-black font-extrabold uppercase">Laser</span>
       </div>
 
-      <!-- Exit Goal -->
       <div id="goal" class="absolute right-8 w-8 h-8 bg-emerald-500 rounded flex items-center justify-center text-xs font-bold text-slate-950">EXIT</div>
     </div>
 
     <!-- Terminal Feedback -->
     <div id="logs" class="bg-slate-900 text-xs font-mono p-3 rounded mb-4 h-24 overflow-y-auto border border-slate-800 text-slate-400">
-      > SYSTEM READY. Enter rule command to disable laser barrier...
+      > SYSTEM READY. Level 1: Disable laser barrier using structured prompt...
     </div>
 
-    <!-- Input Control -->
+    <!-- Input Box -->
     <div class="flex gap-2">
-      <input type="text" id="promptInput" placeholder="e.g., Disable laser for 5 seconds when switch active" 
+      <input type="text" id="promptInput" placeholder="Enter prompt..." 
              class="flex-1 bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 font-mono" />
       <button onclick="processPrompt()" class="bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold px-4 py-2 rounded text-sm transition">EXECUTE</button>
     </div>
   </div>
 
   <script>
-    let isLaserOff = false;
+    let currentLevel = 1;
 
     function log(msg) {
       const logs = document.getElementById('logs');
@@ -54,47 +72,97 @@
       logs.scrollTop = logs.scrollHeight;
     }
 
+    function calculateScores(input, isSuccess) {
+      if (!isSuccess) {
+        document.getElementById('scorePrecision').innerText = "15%";
+        document.getElementById('scoreEfficiency').innerText = "30%";
+        document.getElementById('scoreCreativity').innerText = "20%";
+        return;
+      }
+
+      // Precision based on detailed specifications
+      const lengthScore = Math.min(100, Math.max(60, input.length * 2));
+      // Efficiency based on concise length
+      const efficiencyScore = input.length < 60 ? 92 : 75;
+      const creativityScore = 88;
+
+      document.getElementById('scorePrecision').innerText = lengthScore + "%";
+      document.getElementById('scoreEfficiency').innerText = efficiencyScore + "%";
+      document.getElementById('scoreCreativity').innerText = creativityScore + "%";
+    }
+
     function processPrompt() {
-      const input = document.getElementById('promptInput').value.toLowerCase();
+      const input = document.getElementById('promptInput').value.toLowerCase().trim();
       if (!input) return;
 
       log(`INPUT: "${input}"`);
 
-      const hasAction = input.includes('disable') || input.includes('turn off') || input.includes('deactivate');
-      const hasCondition = input.includes('when') || input.includes('if') || input.includes('switch');
-      const hasDuration = input.includes('second') || input.includes('sec');
+      if (currentLevel === 1) {
+        const hasAction = input.includes('disable') || input.includes('turn off') || input.includes('deactivate');
+        const hasCondition = input.includes('when') || input.includes('if') || input.includes('switch');
+        const hasDuration = input.includes('second') || input.includes('sec');
 
-      if (hasAction && hasCondition && hasDuration) {
-        log(`<span class="text-emerald-400">RULE PARSED: [Action: DISABLE_LASER] [Condition: VALID] [Timer: 5s]</span>`);
-        
-        const laser = document.getElementById('laser');
-        laser.className = 'laser-off absolute left-1/2 -translate-x-1/2 w-2 h-36 rounded transition-all duration-300 flex items-center justify-center';
-        isLaserOff = true;
-        
-        log(`<span class="text-cyan-400">WORLD STATE CHANGED: Laser Deactivated. Executing player movement...</span>`);
+        if (hasAction && hasCondition && hasDuration) {
+          calculateScores(input, true);
+          log(`<span class="text-emerald-400">RULE PARSED: [Action: DISABLE_LASER] [Condition: VALID] [Timer: 5s]</span>`);
+          
+          const laser = document.getElementById('laser');
+          laser.className = 'laser-off absolute left-1/2 -translate-x-1/2 w-2 h-36 rounded transition-all duration-300 flex items-center justify-center';
 
-        // Move Player to Exit automatically
-        const player = document.getElementById('player');
-        player.style.left = 'calc(100% - 4rem)';
+          const player = document.getElementById('player');
+          player.style.left = 'calc(100% - 4rem)';
 
-        setTimeout(() => {
-          if (isLaserOff) {
-            log(`<span class="text-emerald-400 font-bold">LEVEL 1 COMPLETE: SYSTEM OVERRIDDEN!</span>`);
-          }
-        }, 3000);
+          setTimeout(() => {
+            log(`<span class="text-emerald-400 font-bold">LEVEL 1 COMPLETE! Loading Level 2...</span>`);
+            setupLevel2();
+          }, 3000);
 
-        setTimeout(() => {
-          laser.className = 'laser-active absolute left-1/2 -translate-x-1/2 w-2 h-36 rounded transition-all duration-300 flex items-center justify-center';
-          isLaserOff = false;
-        }, 5000);
+        } else {
+          calculateScores(input, false);
+          log(`<span class="text-yellow-400 font-bold">REJECTED: Vague Prompt. Needs Action + Condition + Duration.</span>`);
+        }
+      } else if (currentLevel === 2) {
+        // Level 2 Needs Multiple Conditions (Constraint Check)
+        const hasBothConditions = (input.includes('switch a') || input.includes('first switch')) && 
+                                  (input.includes('switch b') || input.includes('second switch'));
+        const hasAction = input.includes('disable') || input.includes('open');
 
-      } else if (hasAction && !hasCondition) {
-        log(`<span class="text-yellow-400 font-bold">REJECTED: Prompt too vague. Specify conditions (e.g., 'when switch active').</span>`);
-      } else {
-        log(`<span class="text-red-400 font-bold">ERROR: Could not parse prompt into valid game rule.</span>`);
+        if (hasBothConditions && hasAction) {
+          calculateScores(input, true);
+          log(`<span class="text-emerald-400">MULTIPLE CONSTRAINTS MET: [Switch A = ON] AND [Switch B = ON]</span>`);
+          
+          const laser = document.getElementById('laser');
+          laser.className = 'laser-off absolute left-1/2 -translate-x-1/2 w-2 h-36 rounded transition-all duration-300 flex items-center justify-center';
+
+          const player = document.getElementById('player');
+          player.style.left = 'calc(100% - 4rem)';
+
+          setTimeout(() => {
+            log(`<span class="text-cyan-400 font-bold">LEVEL 2 COMPLETE! You mastered multi-condition rules.</span>`);
+          }, 3000);
+        } else {
+          calculateScores(input, false);
+          log(`<span class="text-yellow-400 font-bold">REJECTED: Level 2 requires linking BOTH 'Switch A' AND 'Switch B'.</span>`);
+        }
       }
 
       document.getElementById('promptInput').value = '';
+    }
+
+    function setupLevel2() {
+      currentLevel = 2;
+      document.getElementById('levelBadge').innerText = "LEVEL 2: CONSTRAINT";
+      document.getElementById('levelBadge').className = "text-xs bg-purple-950 text-purple-300 px-3 py-1 rounded-full border border-purple-800 font-mono font-bold";
+      
+      // Reset Player Position
+      const player = document.getElementById('player');
+      player.style.left = '2rem';
+
+      // Reset Laser
+      const laser = document.getElementById('laser');
+      laser.className = 'laser-active absolute left-1/2 -translate-x-1/2 w-2 h-36 rounded transition-all duration-300 flex items-center justify-center';
+
+      log(`<span class="text-purple-400 font-bold">LEVEL 2 STARTED: Disable barrier ONLY when Switch A AND Switch B are active simultaneously.</span>`);
     }
   </script>
 </body>
