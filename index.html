@@ -24,13 +24,88 @@
     .switch-off { background-color: #334155; border-color: #64748b; }
     .gate-closed { background-color: #b91c1c; border-color: #f87171; }
     .gate-open { background-color: #059669; border-color: #34d399; box-shadow: 0 0 10px #34d399; }
+    .core-locked { background-color: #475569; border-color: #64748b; }
+    .core-active { background-color: #a855f7; border-color: #c084fc; box-shadow: 0 0 12px #c084fc; }
   </style>
 </head>
 <body class="bg-slate-950 text-white font-sans min-h-screen flex flex-col items-center justify-center p-2 sm:p-4">
 
+  <!-- START OVERLAY SCREEN -->
+  <div id="startOverlay" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-6 text-center">
+    <div class="max-w-md w-full bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl space-y-6">
+      <div>
+        <h1 class="text-3xl font-black tracking-widest text-cyan-400 font-mono">PROMPT//BREAK</h1>
+        <p class="text-xs text-slate-400 font-mono mt-1">THE WORLD YOU COMMAND</p>
+      </div>
+      <p class="text-sm text-slate-300 leading-relaxed italic">
+        "Your words are not instructions. They are rules."
+      </p>
+      <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-left font-mono text-xs space-y-2 text-slate-400">
+        <div class="text-cyan-400 font-bold">SYSTEM TUTORIAL:</div>
+        <div>1. Construct precise natural language rules.</div>
+        <div>2. Override environmental security logic.</div>
+        <div>3. Reach the exit chamber.</div>
+      </div>
+      <button onclick="startGame()" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-mono font-extrabold py-3 rounded-xl transition shadow-lg text-sm">
+        ENTER THE SYSTEM
+      </button>
+    </div>
+  </div>
+
+  <!-- LEVEL OBJECTIVE MODAL -->
+  <div id="objectiveModal" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-40 flex flex-col items-center justify-center p-4">
+    <div class="max-w-sm w-full bg-slate-900 border border-cyan-800 p-6 rounded-2xl shadow-2xl text-center space-y-4">
+      <span id="objModalTitle" class="text-xs bg-cyan-950 text-cyan-300 px-3 py-1 rounded-full border border-cyan-800 font-mono font-bold uppercase">
+        LEVEL 01 — COMMAND
+      </span>
+      <h2 id="objModalHeader" class="text-lg font-mono font-bold text-white">COMMAND OVERRIDE</h2>
+      <p id="objModalBody" class="text-xs text-slate-300 font-mono leading-relaxed">
+        Reach exit by creating a rule that temporarily disables the laser barrier.
+      </p>
+      <button onclick="closeObjectiveModal()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono font-bold py-2 rounded-xl text-xs transition">
+        UNDERSTOOD
+      </button>
+    </div>
+  </div>
+
+  <!-- VICTORY MODAL OVERLAY -->
+  <div id="victoryOverlay" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 text-center">
+    <div class="max-w-md w-full bg-slate-900 border border-emerald-500 p-6 sm:p-8 rounded-2xl shadow-2xl space-y-5 font-mono">
+      <div class="text-emerald-400 font-extrabold text-xl tracking-wider">SYSTEM OVERRIDE COMPLETE</div>
+      <div class="text-xs text-slate-300 italic">"You didn't break the rules. You learned how to rewrite them."</div>
+      
+      <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 text-xs">
+        <div class="text-slate-400 font-bold border-b border-slate-800 pb-2">FINAL SYSTEM SCORE</div>
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div>
+            <div class="text-slate-500 text-[10px]">PRECISION</div>
+            <div id="finalPrecision" class="text-emerald-400 font-bold text-base">100%</div>
+          </div>
+          <div>
+            <div class="text-slate-500 text-[10px]">EFFICIENCY</div>
+            <div id="finalEfficiency" class="text-cyan-400 font-bold text-base">95%</div>
+          </div>
+          <div>
+            <div class="text-slate-500 text-[10px]">CREATIVITY</div>
+            <div id="finalCreativity" class="text-purple-400 font-bold text-base">98%</div>
+          </div>
+        </div>
+        <div class="border-t border-slate-800 pt-2 flex justify-between text-[11px] text-slate-300">
+          <span>PROMPTS USED: <strong id="finalPromptsUsed" class="text-cyan-400">1 / 3</strong></span>
+          <span>LEVELS CLEARED: <strong class="text-emerald-400">5 / 5</strong></span>
+        </div>
+      </div>
+
+      <button onclick="fullRestart()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl transition text-xs shadow-lg">
+        RESTART FULL SYSTEM
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN GAME CONTAINER -->
   <div class="max-w-3xl w-full bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-800 shadow-2xl space-y-4">
     
-    <!-- Top Bar: Header & Badge -->
+    <!-- Top Bar -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-2 border-b border-slate-800">
       <div>
         <h1 class="text-xl sm:text-2xl font-black tracking-widest text-cyan-400 font-mono">PROMPT//BREAK</h1>
@@ -72,11 +147,11 @@
       </div>
     </div>
 
-    <!-- Rule Parser HUD -->
+    <!-- Rule Parser / System Analysis HUD -->
     <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-xs space-y-1.5">
       <div class="flex justify-between items-center text-slate-400 font-bold border-b border-slate-900 pb-1">
-        <span>RULE PARSER HUD</span>
-        <span id="parserVerdict" class="text-[10px] text-slate-500">AWAITING INPUT</span>
+        <span>SYSTEM ANALYSIS (PARSER HUD)</span>
+        <span id="attemptsCounter" class="text-[10px] text-red-400 font-bold hidden">PROMPTS REMAINING: 3</span>
       </div>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
         <div class="bg-slate-900 p-1.5 rounded border border-slate-800 flex justify-between">
@@ -108,10 +183,13 @@
         P
       </div>
 
-      <!-- Interactive Switches Container -->
-      <div id="switchesContainer" class="relative z-10 flex flex-col gap-4 items-center">
+      <!-- Interactive Switches & System Core Container -->
+      <div id="switchesContainer" class="relative z-10 flex flex-col gap-3 items-center">
         <div id="switchA" class="switch-off w-8 h-8 rounded-md border-2 flex items-center justify-center font-mono text-[10px] font-bold text-white transition-all">
           SA
+        </div>
+        <div id="systemCore" class="core-locked w-8 h-8 rounded-full border-2 flex items-center justify-center font-mono text-[9px] font-extrabold text-white transition-all hidden">
+          CORE
         </div>
         <div id="switchB" class="switch-off w-8 h-8 rounded-md border-2 flex items-center justify-center font-mono text-[10px] font-bold text-white transition-all hidden">
           SB
@@ -137,7 +215,7 @@
       </div>
 
       <div id="logs" class="p-3 font-mono text-xs h-28 overflow-y-auto space-y-1 text-slate-400">
-        > SYSTEM INITIALIZED. Level 1: Construct a rule to disable the laser barrier...
+        <div>> [SYSTEM] Engine initialized. Construct a rule to proceed.</div>
       </div>
 
       <div id="historyView" class="hidden p-3 font-mono text-xs h-28 overflow-y-auto space-y-1.5 text-slate-300">
@@ -145,9 +223,14 @@
       </div>
     </div>
 
-    <!-- Level 5 Retry Container -->
-    <div id="retryContainer" class="hidden">
-      <button onclick="resetLevel5()" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-2 rounded-xl font-mono text-xs transition shadow-lg">RETRY LEVEL 5 OVERRIDE</button>
+    <!-- Level 5 Retry / Reset Container -->
+    <div id="retryContainer" class="hidden flex gap-2">
+      <button onclick="resetLevel5()" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl font-mono text-xs transition shadow-lg">
+        RETRY LEVEL 5
+      </button>
+      <button onclick="fullRestart()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2.5 rounded-xl font-mono text-xs transition border border-slate-700">
+        RESTART GAME
+      </button>
     </div>
 
     <!-- Input Control Panel -->
@@ -155,14 +238,14 @@
       <input type="text" id="promptInput" placeholder="Type natural language rule..." 
              onkeydown="if(event.key==='Enter') processPrompt()"
              class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 font-mono transition" />
-      <button onclick="processPrompt()" class="bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-sm font-mono transition shadow-lg">EXECUTE</button>
+      <button id="execBtn" onclick="processPrompt()" class="bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-sm font-mono transition shadow-lg">EXECUTE</button>
     </div>
 
   </div>
 
   <script>
     /* ==================================================
-       2. CENTRALIZED GAME STATE
+       CENTRALIZED GAME STATE
        ================================================== */
     let gameState = {
       level: 1,
@@ -170,16 +253,33 @@
       laserActive: true,
       switchA: false,
       switchB: false,
+      systemCoreActive: false,
       gateOpen: false,
       attempts: 3,
+      scoresHistory: { precision: [], efficiency: [], creativity: [] },
       promptHistory: []
     };
 
-    // Helper: Prevent XSS
     function escapeHTML(str) {
       return str.replace(/[&<>'"]/g, 
         tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
       );
+    }
+
+    function startGame() {
+      document.getElementById('startOverlay').classList.add('hidden');
+      setupLevel1();
+    }
+
+    function showObjectiveModal(title, header, bodyText) {
+      document.getElementById('objModalTitle').innerText = title;
+      document.getElementById('objModalHeader').innerText = header;
+      document.getElementById('objModalBody').innerText = bodyText;
+      document.getElementById('objectiveModal').classList.remove('hidden');
+    }
+
+    function closeObjectiveModal() {
+      document.getElementById('objectiveModal').classList.add('hidden');
     }
 
     function switchTab(tab) {
@@ -196,18 +296,17 @@
       }
     }
 
-    function log(msg) {
+    function sysLog(category, msg, colorClass = 'text-slate-400') {
       const logs = document.getElementById('logs');
-      logs.innerHTML += `<div>> ${msg}</div>`;
+      logs.innerHTML += `<div class="${colorClass}">> [${category}] ${msg}</div>`;
       logs.scrollTop = logs.scrollHeight;
     }
 
-    function updateHUD(action, cond, dur, constr, isValid) {
+    function updateHUD(action, cond, dur, constr) {
       const elAct = document.getElementById('hudAction');
       const elCond = document.getElementById('hudCond');
       const elDur = document.getElementById('hudDur');
       const elConst = document.getElementById('hudConst');
-      const verdict = document.getElementById('parserVerdict');
 
       elAct.innerText = action ? '✓' : '✗';
       elAct.className = action ? 'font-bold text-emerald-400' : 'font-bold text-red-400';
@@ -220,49 +319,44 @@
 
       elConst.innerText = constr ? '✓' : '✗';
       elConst.className = constr ? 'font-bold text-emerald-400' : 'font-bold text-red-400';
-
-      verdict.innerText = isValid ? 'RULE VALIDATED' : 'RULE REJECTED';
-      verdict.className = isValid ? 'text-[10px] text-emerald-400 font-bold' : 'text-[10px] text-red-400 font-bold';
     }
 
     function renderWorld() {
       const laserEl = document.getElementById('laser');
       const switchAEl = document.getElementById('switchA');
       const switchBEl = document.getElementById('switchB');
+      const coreEl = document.getElementById('systemCore');
       const gateEl = document.getElementById('exitGate');
       const playerEl = document.getElementById('player');
       const worldStateText = document.getElementById('worldStateText');
 
-      // Laser Visual
       laserEl.className = gameState.laserActive 
         ? 'laser-active-anim relative z-10 w-2.5 h-44 rounded-full transition-all duration-500 flex items-center justify-center'
         : 'laser-off-anim relative z-10 w-2.5 h-44 rounded-full transition-all duration-500 flex items-center justify-center';
 
-      // Switches Visual
       switchAEl.className = gameState.switchA ? 'switch-on w-8 h-8 rounded-md border-2 flex items-center justify-center font-mono text-[10px] font-bold text-white transition-all' : 'switch-off w-8 h-8 rounded-md border-2 flex items-center justify-center font-mono text-[10px] font-bold text-white transition-all';
       switchBEl.className = gameState.switchB ? 'switch-on w-8 h-8 rounded-md border-2 flex items-center justify-center font-mono text-[10px] font-bold text-white transition-all' : 'switch-off w-8 h-8 rounded-md border-2 flex items-center justify-center font-mono text-[10px] font-bold text-white transition-all';
+      coreEl.className = gameState.systemCoreActive ? 'core-active w-8 h-8 rounded-full border-2 flex items-center justify-center font-mono text-[9px] font-extrabold text-white transition-all' : 'core-locked w-8 h-8 rounded-full border-2 flex items-center justify-center font-mono text-[9px] font-extrabold text-white transition-all';
 
-      // Gate Visual
       gateEl.className = gameState.gateOpen ? 'gate-open relative z-10 w-10 h-10 rounded-lg border-2 flex items-center justify-center font-mono text-[10px] font-extrabold text-white transition-all' : 'gate-closed relative z-10 w-10 h-10 rounded-lg border-2 flex items-center justify-center font-mono text-[10px] font-extrabold text-white transition-all';
 
-      // Player Position Animation
       if (gameState.playerPosition === 'exit') {
         playerEl.style.transform = 'translateX(calc(100% + 12rem))';
       } else {
         playerEl.style.transform = 'translateX(0px)';
       }
 
-      // World State Text Panel
       worldStateText.innerHTML = `
         <div>LASER: <span class="${gameState.laserActive ? 'text-red-400 font-bold' : 'text-emerald-400 font-bold'}">${gameState.laserActive ? 'ACTIVE' : 'OFF'}</span></div>
         <div>GATE: <span class="${gameState.gateOpen ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold'}">${gameState.gateOpen ? 'OPEN' : 'LOCKED'}</span></div>
         ${gameState.level >= 2 ? `<div>SWITCH A: <span class="${gameState.switchA ? 'text-emerald-400 font-bold' : 'text-slate-500'}">${gameState.switchA ? 'ON' : 'OFF'}</span></div>` : ''}
         ${gameState.level >= 2 ? `<div>SWITCH B: <span class="${gameState.switchB ? 'text-emerald-400 font-bold' : 'text-slate-500'}">${gameState.switchB ? 'ON' : 'OFF'}</span></div>` : ''}
+        ${gameState.level === 5 ? `<div>CORE: <span class="${gameState.systemCoreActive ? 'text-purple-400 font-bold' : 'text-slate-500'}">${gameState.systemCoreActive ? 'ACTIVE' : 'LOCKED'}</span></div>` : ''}
       `;
     }
 
     /* ==================================================
-       DAY 3 INTENT PARSER ENGINE
+       INTENT PARSER LAYER
        ================================================== */
     function parseIntent(rawInput) {
       if (!rawInput || typeof rawInput !== 'string') {
@@ -288,7 +382,7 @@
         }
       }
 
-      const actionSynonyms = ['disable', 'turn off', 'switch off', 'deactivate', 'keep inactive', 'bypass', 'open'];
+      const actionSynonyms = ['disable', 'turn off', 'switch off', 'deactivate', 'keep inactive', 'bypass', 'open', 'override'];
       if (actionSynonyms.some(syn => input.includes(syn))) {
         intent.action = 'DISABLE_LASER';
       }
@@ -300,7 +394,7 @@
 
       const hasSwitchA = input.includes('switch a') || input.includes('switch 1') || input.includes('first switch');
       const hasSwitchB = input.includes('switch b') || input.includes('switch 2') || input.includes('second switch');
-      const hasBothSwitches = input.includes('both switches') || input.includes('both switch');
+      const hasBothSwitches = input.includes('both switches') || input.includes('both switch') || input.includes('control node');
 
       if (hasBothSwitches || (hasSwitchA && hasSwitchB)) {
         intent.constraints.push('SWITCH_A_ACTIVE', 'SWITCH_B_ACTIVE');
@@ -323,7 +417,7 @@
     }
 
     /* ==================================================
-       DAY 3 RULE VALIDATOR
+       RULE VALIDATOR
        ================================================== */
     function validateRule(intent, level, rawInput) {
       let result = {
@@ -388,7 +482,7 @@
 
         if (hasAction && hasCond && hasDur && hasConst) {
           result.valid = true;
-          result.scores = { precision: 100, efficiency: 100, creativity: 100 };
+          result.scores = { precision: 100, efficiency: 100 - ((3 - gameState.attempts) * 10), creativity: 98 };
         } else {
           let missing = [];
           if (!hasAction) missing.push("ACTION");
@@ -396,7 +490,8 @@
           if (!hasDur) missing.push("DURATION");
           if (!hasConst) missing.push("CONSTRAINT");
           result.reason = `INCOMPLETE OVERRIDE. MISSING: [${missing.join(', ')}]`;
-          result.tip = "Combine Action, Condition, Duration AND Constraints.";
+          result.tip = "Combine Action, Condition, Duration AND Constraints into one master rule.";
+          result.scores = { precision: 40, efficiency: 30, creativity: 20 };
         }
       }
 
@@ -404,7 +499,7 @@
     }
 
     /* ==================================================
-       PROMPT PROCESSING & GAMEPLAY TRANSITIONS
+       PROMPT EXECUTION & GAME LOOP
        ================================================== */
     function processPrompt() {
       const inputField = document.getElementById('promptInput');
@@ -412,10 +507,11 @@
       if (!rawInput || !rawInput.trim()) return;
 
       const safeInput = escapeHTML(rawInput);
-      log(`INPUT: "${safeInput}"`);
+      sysLog('PLAYER', `Submitted prompt: "${safeInput}"`);
 
       // 1. Parse Intent
       const intent = parseIntent(rawInput);
+      sysLog('PARSER', `Intent parsed -> Action: ${intent.action || 'NONE'}, Cond: ${intent.condition || 'NONE'}`);
 
       // 2. Validate Rule
       const validation = validateRule(intent, gameState.level, rawInput);
@@ -425,9 +521,9 @@
       const hasCond = !!intent.condition;
       const hasDur = !!intent.duration;
       const hasConst = intent.constraints.length > 0 || gameState.level === 2 || gameState.level === 5;
-      updateHUD(hasAct, hasCond, hasDur, hasConst, validation.valid);
+      updateHUD(hasAct, hasCond, hasDur, hasConst);
 
-      // 4. Record Prompt History
+      // 4. Record History
       gameState.promptHistory.push({
         prompt: safeInput,
         status: validation.valid ? 'SUCCESS' : 'REJECTED',
@@ -435,54 +531,78 @@
       });
       updateHistoryUI();
 
-      // 5. Update Metrics Score Display
+      // 5. Record & Display Scores
+      gameState.scoresHistory.precision.push(validation.scores.precision);
+      gameState.scoresHistory.efficiency.push(validation.scores.efficiency);
+      gameState.scoresHistory.creativity.push(validation.scores.creativity);
+
       document.getElementById('scorePrecision').innerText = validation.scores.precision + "%";
       document.getElementById('scoreEfficiency').innerText = validation.scores.efficiency + "%";
       document.getElementById('scoreCreativity').innerText = validation.scores.creativity + "%";
 
       if (validation.valid) {
-        // Execute World Changes
+        sysLog('RULE', 'Validation SUCCESSFUL.', 'text-emerald-400 font-bold');
+        sysLog('WORLD', 'Laser state → OFF. Exit gate → UNLOCKED.', 'text-cyan-400');
+
         gameState.laserActive = false;
         gameState.gateOpen = true;
         if (gameState.level >= 2) {
           gameState.switchA = true;
           gameState.switchB = true;
         }
+        if (gameState.level === 5) {
+          gameState.systemCoreActive = true;
+        }
         renderWorld();
 
-        log(`<span class="text-emerald-400 font-bold">RULE PARSED & WORLD OVERRIDDEN</span>`);
-        
         setTimeout(() => {
           gameState.playerPosition = 'exit';
           renderWorld();
         }, 300);
 
         setTimeout(() => {
-          if (gameState.level === 1) triggerNextLevel("LEVEL 1 COMPLETE! Loading Level 2...", setupLevel2);
-          else if (gameState.level === 2) triggerNextLevel("LEVEL 2 COMPLETE! Loading Level 3...", setupLevel3);
-          else if (gameState.level === 3) triggerNextLevel("LEVEL 3 COMPLETE! Loading Level 4...", setupLevel4);
-          else if (gameState.level === 4) triggerNextLevel("LEVEL 4 COMPLETE! Loading Level 5...", setupLevel5);
+          if (gameState.level === 1) triggerNextLevel("LEVEL 1 COMPLETE!", setupLevel2);
+          else if (gameState.level === 2) triggerNextLevel("LEVEL 2 COMPLETE!", setupLevel3);
+          else if (gameState.level === 3) triggerNextLevel("LEVEL 3 COMPLETE!", setupLevel4);
+          else if (gameState.level === 4) triggerNextLevel("LEVEL 4 COMPLETE!", setupLevel5);
           else if (gameState.level === 5) {
-            log(`<span class="text-emerald-400 font-extrabold text-sm">SYSTEM OVERRIDE COMPLETE!<br>PROMPT PRECISION: 100% | WORLD STATE: OVERRIDDEN<br><em>'You didn't break the rules. You learned how to rewrite them.'</em></span>`);
+            triggerVictoryScreen();
           }
-        }, 1800);
+        }, 1600);
 
       } else {
-        log(`<span class="text-red-400 font-bold">RULE REJECTED: ${validation.reason}</span>`);
-        if (validation.tip) log(`<span class="text-yellow-400">TIP: ${validation.tip}</span>`);
+        sysLog('RULE', `REJECTED: ${validation.reason}`, 'text-red-400 font-bold');
+        if (validation.tip) sysLog('SYSTEM', `TIP: ${validation.tip}`, 'text-yellow-400');
 
         if (gameState.level === 5) {
           gameState.attempts--;
+          document.getElementById('attemptsCounter').innerText = `PROMPTS REMAINING: ${gameState.attempts}`;
+
           if (gameState.attempts > 0) {
-            log(`<span class="text-red-400 font-bold">PROMPTS REMAINING: ${gameState.attempts}</span>`);
+            sysLog('SYSTEM', `PROMPTS REMAINING: ${gameState.attempts}`, 'text-red-400 font-bold');
           } else {
-            log(`<span class="text-red-500 font-extrabold">OVERRIDE FAILED! SYSTEM LOCKED.</span>`);
+            sysLog('ERROR', 'OVERRIDE FAILED! System locked all rule attempts.', 'text-red-500 font-extrabold');
             document.getElementById('retryContainer').classList.remove('hidden');
+            document.getElementById('promptInput').disabled = true;
+            document.getElementById('execBtn').disabled = true;
           }
         }
       }
 
       inputField.value = '';
+    }
+
+    function triggerVictoryScreen() {
+      const avgP = Math.round(gameState.scoresHistory.precision.reduce((a,b)=>a+b,0)/gameState.scoresHistory.precision.length) || 100;
+      const avgE = Math.round(gameState.scoresHistory.efficiency.reduce((a,b)=>a+b,0)/gameState.scoresHistory.efficiency.length) || 92;
+      const avgC = Math.round(gameState.scoresHistory.creativity.reduce((a,b)=>a+b,0)/gameState.scoresHistory.creativity.length) || 95;
+
+      document.getElementById('finalPrecision').innerText = avgP + "%";
+      document.getElementById('finalEfficiency').innerText = avgE + "%";
+      document.getElementById('finalCreativity').innerText = avgC + "%";
+      document.getElementById('finalPromptsUsed').innerText = `${4 - gameState.attempts} / 3`;
+
+      document.getElementById('victoryOverlay').classList.remove('hidden');
     }
 
     function updateHistoryUI() {
@@ -502,10 +622,10 @@
     }
 
     function triggerNextLevel(msg, nextFunc) {
-      log(`<span class="text-emerald-400 font-bold">${msg}</span>`);
+      sysLog('SUCCESS', msg, 'text-emerald-400 font-bold');
       setTimeout(() => {
         if (nextFunc) nextFunc();
-      }, 1200);
+      }, 1000);
     }
 
     function resetWorldState() {
@@ -513,20 +633,24 @@
       gameState.laserActive = true;
       gameState.switchA = false;
       gameState.switchB = false;
+      gameState.systemCoreActive = false;
       gameState.gateOpen = false;
+      document.getElementById('promptInput').disabled = false;
+      document.getElementById('execBtn').disabled = false;
       renderWorld();
-      updateHUD(false, false, false, false, false);
-      document.getElementById('parserVerdict').innerText = "AWAITING INPUT";
-      document.getElementById('parserVerdict').className = "text-[10px] text-slate-500";
+      updateHUD(false, false, false, false);
     }
 
     function setupLevel1() {
       gameState.level = 1;
       resetWorldState();
       document.getElementById('switchB').classList.add('hidden');
+      document.getElementById('systemCore').classList.add('hidden');
+      document.getElementById('attemptsCounter').classList.add('hidden');
       document.getElementById('levelBadge').innerText = "LEVEL 1: COMMAND";
       document.getElementById('levelBadge').className = "text-xs bg-cyan-950 text-cyan-300 px-3 py-1 rounded-full border border-cyan-800 font-mono font-bold";
       document.getElementById('objectiveText').innerText = "Reach exit by creating a rule that temporarily disables the laser barrier.";
+      showObjectiveModal("LEVEL 01 — COMMAND", "COMMAND OVERRIDE", "Construct a valid rule combining Action + Condition + Duration to unlock the barrier.");
     }
 
     function setupLevel2() {
@@ -536,7 +660,7 @@
       document.getElementById('levelBadge').innerText = "LEVEL 2: CONSTRAINT";
       document.getElementById('levelBadge').className = "text-xs bg-purple-950 text-purple-300 px-3 py-1 rounded-full border border-purple-800 font-mono font-bold";
       document.getElementById('objectiveText').innerText = "Satisfy BOTH Switch A and Switch B constraints simultaneously to open the path.";
-      log(`<span class="text-purple-400 font-bold">LEVEL 2: Connect Switch A AND Switch B.</span>`);
+      showObjectiveModal("LEVEL 02 — CONSTRAINT", "MULTI-CONSTRAINT PUZZLE", "Create a rule that satisfies both Switch A AND Switch B simultaneously.");
     }
 
     function setupLevel3() {
@@ -545,7 +669,7 @@
       document.getElementById('levelBadge').innerText = "LEVEL 3: AMBIGUITY";
       document.getElementById('levelBadge').className = "text-xs bg-amber-950 text-amber-300 px-3 py-1 rounded-full border border-amber-800 font-mono font-bold";
       document.getElementById('objectiveText').innerText = "Construct an unambiguous rule. Avoid subjective terms like 'safely' or 'quickly'.";
-      log(`<span class="text-amber-400 font-bold">LEVEL 3: Eliminate vague / subjective terms.</span>`);
+      showObjectiveModal("LEVEL 03 — PRECISION", "ANTI-AMBIGUITY FILTER", "Eliminate subjective adverbs like 'safely' or 'quickly'. Use exact measurable values.");
     }
 
     function setupLevel4() {
@@ -554,26 +678,37 @@
       document.getElementById('levelBadge').innerText = "LEVEL 4: PARADOX";
       document.getElementById('levelBadge').className = "text-xs bg-red-950 text-red-300 px-3 py-1 rounded-full border border-red-800 font-mono font-bold";
       document.getElementById('objectiveText').innerText = "Resolve logical inversion. Use conditional exception rules like 'unless' or 'except'.";
-      log(`<span class="text-red-400 font-bold">LEVEL 4: Resolve logical inversion.</span>`);
+      showObjectiveModal("LEVEL 04 — LOGIC", "LOGICAL INVERSION", "Construct an inversion rule using 'unless' or 'except' to resolve the paradox.");
     }
 
     function setupLevel5() {
       gameState.level = 5;
       gameState.attempts = 3;
       resetWorldState();
-      document.getElementById('levelBadge').innerText = "LEVEL 5: FINAL OVERRIDE";
+      document.getElementById('systemCore').classList.remove('hidden');
+      document.getElementById('switchB').classList.remove('hidden');
+      document.getElementById('attemptsCounter').innerText = "PROMPTS REMAINING: 3";
+      document.getElementById('attemptsCounter').classList.remove('hidden');
+      document.getElementById('levelBadge').innerText = "LEVEL 5: MASTER OVERRIDE";
       document.getElementById('levelBadge').className = "text-xs bg-red-950 text-red-300 px-3 py-1 rounded-full border border-red-800 font-mono font-bold";
       document.getElementById('retryContainer').classList.add('hidden');
       document.getElementById('objectiveText').innerText = "Construct ONE master rule combining Action, Condition, Duration AND Constraints (Max 3 attempts).";
-      log(`<span class="text-red-400 font-bold">FINAL OVERRIDE | PROMPTS REMAINING: 3</span>`);
+      showObjectiveModal("LEVEL 05 — MASTER OVERRIDE", "FINAL SYSTEM OVERRIDE", "You have exactly 3 attempts to construct a single master rule with Action + Condition + Duration + Constraint.");
     }
 
     function resetLevel5() {
+      document.getElementById('retryContainer').classList.add('hidden');
       setupLevel5();
     }
 
-    // Initial World Setup
-    setupLevel1();
+    function fullRestart() {
+      document.getElementById('victoryOverlay').classList.add('hidden');
+      document.getElementById('retryContainer').classList.add('hidden');
+      gameState.scoresHistory = { precision: [], efficiency: [], creativity: [] };
+      gameState.promptHistory = [];
+      updateHistoryUI();
+      setupLevel1();
+    }
   </script>
 </body>
 </html>
