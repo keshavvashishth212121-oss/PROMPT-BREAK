@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>PROMPT//BREAK - Core Engine</title>
+  <title>PROMPT//BREAK — The World You Command</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     .laser-active { background-color: #ef4444; box-shadow: 0 0 15px #ef4444; opacity: 1; }
@@ -18,7 +18,7 @@
     <div class="flex justify-between items-center mb-4">
       <div>
         <h1 class="text-xl font-bold tracking-wider text-cyan-400">PROMPT//BREAK</h1>
-        <p class="text-xs text-slate-400 font-mono">DETERMINISTIC RULE ENGINE</p>
+        <p class="text-xs text-slate-400 font-mono">DETERMINISTIC INTENT ENGINE</p>
       </div>
       <span id="levelBadge" class="text-xs bg-cyan-950 text-cyan-300 px-3 py-1 rounded-full border border-cyan-800 font-mono font-bold">LEVEL 1: COMMAND</span>
     </div>
@@ -39,7 +39,18 @@
       </div>
     </div>
 
-    <!-- Viewport -->
+    <!-- Rule Parser Live Status Badge -->
+    <div class="mb-4 bg-slate-900 border border-slate-700 rounded p-2.5 flex justify-between items-center font-mono text-xs">
+      <span class="text-slate-400 font-bold">PARSER STATUS:</span>
+      <div class="flex gap-3">
+        <span>ACTION: <strong id="stAction" class="text-red-400">✗</strong></span>
+        <span>CONDITION: <strong id="stCond" class="text-red-400">✗</strong></span>
+        <span>DURATION: <strong id="stDur" class="text-red-400">✗</strong></span>
+        <span>CONSTRAINT: <strong id="stConst" class="text-red-400">✗</strong></span>
+      </div>
+    </div>
+
+    <!-- Game Viewport -->
     <div id="gameArea" class="relative bg-slate-950 h-48 rounded-lg border border-slate-800 mb-4 flex items-center px-8 overflow-hidden">
       <div id="player" class="absolute left-8 w-8 h-8 bg-cyan-500 rounded flex items-center justify-center text-xs font-bold text-slate-950 z-10">P</div>
       
@@ -50,14 +61,19 @@
       <div id="goal" class="absolute right-8 w-8 h-8 bg-emerald-500 rounded flex items-center justify-center text-xs font-bold text-slate-950">EXIT</div>
     </div>
 
-    <!-- Terminal Output -->
+    <!-- Terminal Feedback -->
     <div id="logs" class="bg-slate-900 text-xs font-mono p-3 rounded mb-4 h-28 overflow-y-auto border border-slate-800 text-slate-400">
-      > SYSTEM READY. Level 1: Disable laser barrier using structured prompt...
+      > SYSTEM READY. Level 1: Disable laser barrier using structured prompt (Action + Condition + Duration)...
     </div>
 
-    <!-- Input -->
+    <!-- Level 5 Retry Button (Hidden by default) -->
+    <div id="retryContainer" class="hidden mb-4">
+      <button onclick="resetLevel5()" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-2 rounded text-sm font-mono transition">RETRY LEVEL 5</button>
+    </div>
+
+    <!-- Input Control -->
     <div class="flex gap-2">
-      <input type="text" id="promptInput" placeholder="Enter rule prompt..." 
+      <input type="text" id="promptInput" placeholder="Enter natural language rule..." 
              class="flex-1 bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 font-mono" />
       <button onclick="processPrompt()" class="bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold px-4 py-2 rounded text-sm transition">EXECUTE</button>
     </div>
@@ -65,6 +81,15 @@
 
   <script>
     let currentLevel = 1;
+    let maxAttemptsLevel5 = 3;
+    let attemptsLeft = 3;
+
+    // Helper: Escape raw text to prevent XSS
+    function escapeHTML(str) {
+      return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+      );
+    }
 
     function log(msg) {
       const logs = document.getElementById('logs');
@@ -72,59 +97,233 @@
       logs.scrollTop = logs.scrollHeight;
     }
 
-    function setScores(p, e, c) {
-      document.getElementById('scorePrecision').innerText = p + "%";
-      document.getElementById('scoreEfficiency').innerText = e + "%";
-      document.getElementById('scoreCreativity').innerText = c + "%";
+    function updateParserStatus(hasAction, hasCond, hasDur, hasConst) {
+      document.getElementById('stAction').className = hasAction ? 'text-emerald-400' : 'text-red-400';
+      document.getElementById('stAction').innerText = hasAction ? '✓' : '✗';
+      
+      document.getElementById('stCond').className = hasCond ? 'text-emerald-400' : 'text-red-400';
+      document.getElementById('stCond').innerText = hasCond ? '✓' : '✗';
+
+      document.getElementById('stDur').className = hasDur ? 'text-emerald-400' : 'text-red-400';
+      document.getElementById('stDur').innerText = hasDur ? '✓' : '✗';
+
+      document.getElementById('stConst').className = hasConst ? 'text-emerald-400' : 'text-red-400';
+      document.getElementById('stConst').innerText = hasConst ? '✓' : '✗';
     }
 
-    function processPrompt() {
-      const input = document.getElementById('promptInput').value.toLowerCase().trim();
-      if (!input) return;
-
-      log(`INPUT: "${input}"`);
-
-      if (currentLevel === 1) {
-        if (input.includes('disable') && input.includes('when') && input.includes('second')) {
-          setScores(100, 92, 88);
-          triggerWin("LEVEL 1 COMPLETE! Loading Level 2...", setupLevel2);
-        } else {
-          setScores(20, 30, 10);
-          log(`<span class="text-yellow-400">REJECTED: Need Action + Condition + Duration.</span>`);
-        }
-      } else if (currentLevel === 2) {
-        if ((input.includes('switch a') || input.includes('switch 1')) && (input.includes('switch b') || input.includes('switch 2')) && input.includes('disable')) {
-          setScores(100, 75, 88);
-          triggerWin("LEVEL 2 COMPLETE! Loading Level 3...", setupLevel3);
-        } else {
-          setScores(30, 40, 20);
-          log(`<span class="text-yellow-400">REJECTED: Both Switch A and Switch B required.</span>`);
-        }
-      } else if (currentLevel === 3) {
-        // Level 3: Anti-Ambiguity filter
-        if (input.includes('safely') || input.includes('slowly') || input.includes('fast')) {
-          setScores(10, 10, 50);
-          log(`<span class="text-red-400">AMBIGUITY DETECTED: 'Safely' or 'slowly' are subjective terms. Use exact boolean values.</span>`);
-        } else if (input.includes('disable laser when state is clear') || input.includes('bypass laser on clear path')) {
-          setScores(95, 90, 95);
-          triggerWin("LEVEL 3 COMPLETE! Anti-Ambiguity Rules Passed. Loading Level 4...", setupLevel4);
-        } else {
-          log(`<span class="text-yellow-400">REJECTED: Avoid subjective adjectives. Define non-ambiguous conditions.</span>`);
-        }
-      } else if (currentLevel === 4) {
-        // Level 4: Logic Paradox Resolution
-        if (input.includes('disable laser unless switch active') || input.includes('invert laser status on switch')) {
-          setScores(100, 95, 98);
-          triggerWin("LEVEL 4 COMPLETE! Paradox Resolved. Loading Final Level 5...", setupLevel5);
-        } else {
-          log(`<span class="text-yellow-400">REJECTED: Logical paradox unresolved. Use inversion / logic gate rules.</span>`);
-        }
-      } else if (currentLevel === 5) {
-        setScores(100, 100, 100);
-        triggerWin("DEMO COMPLETE: GAME FULLY OVERRIDDEN! EVOX 1.0 Submission Ready.", null);
+    /* ==================================================
+       1. NORMALIZED INTENT LAYER (SYNONYMS & NUMBERS)
+       ================================================== */
+    function parseIntent(rawInput) {
+      if (!rawInput || typeof rawInput !== 'string') {
+        return { action: null, condition: null, duration: null, constraints: [], ambiguity: false, words: [] };
       }
 
-      document.getElementById('promptInput').value = '';
+      // Sanitize and normalize spaces/case
+      let input = rawInput.toLowerCase().replace(/[^\w\s]/gi, ' ').replace(/\s+/g, ' ').trim();
+      
+      // Convert word-numbers to digits
+      const numberMap = { 'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'ten': 10 };
+      Object.keys(numberMap).forEach(word => {
+        const regex = new RegExp(`\\b${word}\\b`, 'g');
+        input = input.replace(regex, numberMap[word]);
+      });
+
+      const intent = {
+        action: null,
+        condition: null,
+        duration: null,
+        constraints: [],
+        ambiguity: false,
+        ambiguousTerm: ''
+      };
+
+      // Ambiguity Detection
+      const subjectiveTerms = ['safely', 'quickly', 'slowly', 'soon', 'properly', 'carefully', 'a while', 'a little', 'fast'];
+      for (let term of subjectiveTerms) {
+        if (input.includes(term)) {
+          intent.ambiguity = true;
+          intent.ambiguousTerm = term;
+          break;
+        }
+      }
+
+      // ACTION Normalization
+      const actionSynonyms = ['disable', 'turn off', 'switch off', 'deactivate', 'keep inactive', 'bypass', 'open'];
+      if (actionSynonyms.some(syn => input.includes(syn))) {
+        intent.action = 'DISABLE_LASER';
+      }
+
+      // DURATION Normalization
+      const durationMatch = input.match(/(\d+)\s*(seconds|second|sec)/);
+      if (durationMatch) {
+        intent.duration = parseInt(durationMatch[1], 10);
+      }
+
+      // CONDITION & CONSTRAINT Normalization
+      const hasSwitchA = input.includes('switch a') || input.includes('switch 1') || input.includes('first switch');
+      const hasSwitchB = input.includes('switch b') || input.includes('switch 2') || input.includes('second switch');
+      const hasBothSwitches = input.includes('both switches') || input.includes('both switch');
+
+      if (hasBothSwitches || (hasSwitchA && hasSwitchB)) {
+        intent.constraints.push('SWITCH_A_ACTIVE', 'SWITCH_B_ACTIVE');
+        intent.condition = 'BOTH_SWITCHES_ACTIVE';
+      } else if (hasSwitchA) {
+        intent.constraints.push('SWITCH_A_ACTIVE');
+        intent.condition = 'SWITCH_A_ACTIVE';
+      } else if (hasSwitchB) {
+        intent.constraints.push('SWITCH_B_ACTIVE');
+        intent.condition = 'SWITCH_B_ACTIVE';
+      } else if (input.includes('blue switch') || input.includes('switch') || input.includes('state is clear') || input.includes('clear path')) {
+        intent.condition = 'GENERIC_SWITCH_ACTIVE';
+      }
+
+      // Logical Inversion check ("unless", "except", "inactive")
+      if (input.includes('unless') || input.includes('except') || input.includes('while switch is inactive')) {
+        intent.condition = 'INVERTED_LOGIC_ACTIVE';
+      }
+
+      return intent;
+    }
+
+    /* ==================================================
+       4. RULE VALIDATOR & SCORING SYSTEM
+       ================================================== */
+    function validateRule(intent, level, rawInput) {
+      let result = {
+        valid: false,
+        reason: '',
+        tip: '',
+        scores: { precision: 0, efficiency: 0, creativity: 0 }
+      };
+
+      if (intent.ambiguity) {
+        result.reason = `AMBIGUITY DETECTED: '${intent.ambiguousTerm}' does not define a measurable value.`;
+        result.tip = "Use exact measurable conditions (e.g., '2 seconds').";
+        result.scores = { precision: 10, efficiency: 10, creativity: 50 };
+        return result;
+      }
+
+      if (level === 1) {
+        if (!intent.action) {
+          result.reason = "MISSING: ACTION";
+          result.tip = "Specify action like 'disable' or 'turn off'.";
+        } else if (!intent.condition) {
+          result.reason = "MISSING: CONDITION";
+          result.tip = "Specify condition like 'when blue switch activates'.";
+        } else if (!intent.duration) {
+          result.reason = "MISSING: DURATION";
+          result.tip = "Specify a measurable duration like 'for 2 seconds'.";
+        } else {
+          result.valid = true;
+          result.scores = { precision: 100, efficiency: rawInput.length < 65 ? 92 : 78, creativity: 88 };
+        }
+      } else if (level === 2) {
+        if (!intent.action) {
+          result.reason = "MISSING: ACTION";
+        } else if (intent.constraints.length < 2) {
+          result.reason = "MISSING: CONSTRAINT";
+          result.tip = "Level 2 requires BOTH Switch A and Switch B.";
+        } else {
+          result.valid = true;
+          result.scores = { precision: 100, efficiency: 85, creativity: 90 };
+        }
+      } else if (level === 3) {
+        if (intent.action && intent.condition) {
+          result.valid = true;
+          result.scores = { precision: 95, efficiency: 90, creativity: 95 };
+        } else {
+          result.reason = "AMBIGUITY REJECTED";
+          result.tip = "Use precise non-subjective conditions.";
+        }
+      } else if (level === 4) {
+        if (intent.action && intent.condition === 'INVERTED_LOGIC_ACTIVE') {
+          result.valid = true;
+          result.scores = { precision: 100, efficiency: 95, creativity: 98 };
+        } else {
+          result.reason = "PARADOX UNRESOLVED";
+          result.tip = "Use logical inversion like 'unless switch active'.";
+        }
+      } else if (level === 5) {
+        const hasAction = !!intent.action;
+        const hasCond = !!intent.condition;
+        const hasDur = !!intent.duration;
+        const hasConst = intent.constraints.length >= 1 || intent.condition === 'BOTH_SWITCHES_ACTIVE';
+
+        if (hasAction && hasCond && hasDur && hasConst) {
+          result.valid = true;
+          result.scores = { precision: 100, efficiency: 100, creativity: 100 };
+        } else {
+          let missing = [];
+          if (!hasAction) missing.push("ACTION");
+          if (!hasCond) missing.push("CONDITION");
+          if (!hasDur) missing.push("DURATION");
+          if (!hasConst) missing.push("CONSTRAINT (e.g. Switch A/B)");
+          result.reason = `INCOMPLETE OVERRIDE RULE. MISSING: [${missing.join(', ')}]`;
+          result.tip = "Combine Action, Condition, Duration, AND Constraints into one rule.";
+        }
+      }
+
+      return result;
+    }
+
+    /* ==================================================
+       GAME LOOP & EXECUTION
+       ================================================== */
+    function processPrompt() {
+      const inputField = document.getElementById('promptInput');
+      const rawInput = inputField.value;
+      if (!rawInput || !rawInput.trim()) return;
+
+      const safeInput = escapeHTML(rawInput);
+      log(`INPUT: "${safeInput}"`);
+
+      // 1. Parse Intent
+      const intent = parseIntent(rawInput);
+
+      // Update Live UI Status Bar
+      const hasAct = !!intent.action;
+      const hasCond = !!intent.condition;
+      const hasDur = !!intent.duration;
+      const hasConst = intent.constraints.length > 0 || currentLevel === 2 || currentLevel === 5;
+      updateParserStatus(hasAct, hasCond, hasDur, hasConst);
+
+      // 2. Validate Rule
+      const validation = validateRule(intent, currentLevel, rawInput);
+
+      // Apply Score
+      document.getElementById('scorePrecision').innerText = validation.scores.precision + "%";
+      document.getElementById('scoreEfficiency').innerText = validation.scores.efficiency + "%";
+      document.getElementById('scoreCreativity').innerText = validation.scores.creativity + "%";
+
+      if (validation.valid) {
+        log(`<span class="text-emerald-400 font-bold">RULE PARSED SUCCESSFUL</span>`);
+        log(`<span class="text-cyan-400">ACTION: ${intent.action} | COND: ${intent.condition} | DURATION: ${intent.duration || 'N/A'}s</span>`);
+
+        if (currentLevel === 1) triggerWin("LEVEL 1 COMPLETE! Loading Level 2...", setupLevel2);
+        else if (currentLevel === 2) triggerWin("LEVEL 2 COMPLETE! Loading Level 3...", setupLevel3);
+        else if (currentLevel === 3) triggerWin("LEVEL 3 COMPLETE! Anti-Ambiguity Rules Passed. Loading Level 4...", setupLevel4);
+        else if (currentLevel === 4) triggerWin("LEVEL 4 COMPLETE! Paradox Resolved. Loading Final Level 5...", setupLevel5);
+        else if (currentLevel === 5) {
+          triggerWin("SYSTEM OVERRIDE COMPLETE!<br>PROMPT PRECISION: 100% | WORLD STATE: OVERRIDDEN<br><em>'You didn't break the rules. You learned how to rewrite them.'</em>", null);
+        }
+      } else {
+        log(`<span class="text-red-400 font-bold">RULE REJECTED: ${validation.reason}</span>`);
+        if (validation.tip) log(`<span class="text-yellow-400">TIP: ${validation.tip}</span>`);
+
+        // Level 5 Attempt Countdown Check
+        if (currentLevel === 5) {
+          attemptsLeft--;
+          if (attemptsLeft > 0) {
+            log(`<span class="text-red-400 font-bold">PROMPTS REMAINING: ${attemptsLeft}</span>`);
+          } else {
+            log(`<span class="text-red-500 font-extrabold">OVERRIDE FAILED! SYSTEM LOCKED.</span>`);
+            document.getElementById('retryContainer').classList.remove('hidden');
+          }
+        }
+      }
+
+      inputField.value = '';
     }
 
     function triggerWin(msg, nextLevelFunc) {
@@ -145,6 +344,7 @@
       player.style.left = '2rem';
       const laser = document.getElementById('laser');
       laser.className = 'laser-active absolute left-1/2 -translate-x-1/2 w-2 h-36 rounded transition-all duration-300 flex items-center justify-center';
+      updateParserStatus(false, false, false, false);
     }
 
     function setupLevel2() {
@@ -152,7 +352,7 @@
       resetPlayerAndLaser();
       document.getElementById('levelBadge').innerText = "LEVEL 2: CONSTRAINT";
       document.getElementById('levelBadge').className = "text-xs bg-purple-950 text-purple-300 px-3 py-1 rounded-full border border-purple-800 font-mono font-bold";
-      log(`<span class="text-purple-400 font-bold">LEVEL 2: Connect Switch A AND Switch B simultaneously.</span>`);
+      log(`<span class="text-purple-400 font-bold">LEVEL 2: Connect BOTH Switch A AND Switch B simultaneously.</span>`);
     }
 
     function setupLevel3() {
@@ -160,7 +360,7 @@
       resetPlayerAndLaser();
       document.getElementById('levelBadge').innerText = "LEVEL 3: AMBIGUITY";
       document.getElementById('levelBadge').className = "text-xs bg-amber-950 text-amber-300 px-3 py-1 rounded-full border border-amber-800 font-mono font-bold";
-      log(`<span class="text-amber-400 font-bold">LEVEL 3: Eliminate subjective words like 'safely' or 'quick'. Use: "disable laser when state is clear"</span>`);
+      log(`<span class="text-amber-400 font-bold">LEVEL 3: Eliminate subjective words like 'safely' or 'quickly'.</span>`);
     }
 
     function setupLevel4() {
@@ -168,15 +368,22 @@
       resetPlayerAndLaser();
       document.getElementById('levelBadge').innerText = "LEVEL 4: PARADOX";
       document.getElementById('levelBadge').className = "text-xs bg-red-950 text-red-300 px-3 py-1 rounded-full border border-red-800 font-mono font-bold";
-      log(`<span class="text-red-400 font-bold">LEVEL 4: Resolve logical inversion. Use: "disable laser unless switch active"</span>`);
+      log(`<span class="text-red-400 font-bold">LEVEL 4: Resolve logical inversion using 'unless' or 'except'.</span>`);
     }
 
     function setupLevel5() {
       currentLevel = 5;
+      attemptsLeft = 3;
       resetPlayerAndLaser();
-      document.getElementById('levelBadge').innerText = "LEVEL 5: MASTER OVERRIDE";
-      document.getElementById('levelBadge').className = "text-xs bg-emerald-950 text-emerald-300 px-3 py-1 rounded-full border border-emerald-800 font-mono font-bold";
-      log(`<span class="text-emerald-400 font-bold">LEVEL 5: Final challenge. Any valid structured prompt unlocks complete system override.</span>`);
+      document.getElementById('levelBadge').innerText = "LEVEL 5: FINAL OVERRIDE";
+      document.getElementById('levelBadge').className = "text-xs bg-red-950 text-red-300 px-3 py-1 rounded-full border border-red-800 font-mono font-bold";
+      document.getElementById('retryContainer').classList.add('hidden');
+      log(`<span class="text-red-400 font-bold">FINAL OVERRIDE | PROMPTS REMAINING: 3</span>`);
+      log(`Construct ONE master rule with Action, Condition, Duration, AND Constraint.`);
+    }
+
+    function resetLevel5() {
+      setupLevel5();
     }
   </script>
 </body>
